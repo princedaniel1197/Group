@@ -22,9 +22,12 @@ function createClient() {
 
   const sql = postgres(url, {
     ssl: isInternal ? false : "require",
-    max: isServerless ? 1 : 10,
+    // Vercel Fluid Compute runs multiple concurrent requests per instance, so a
+    // pool of 1 serializes them and one stuck connection stalls the instance.
+    // Use a small pool with a low idle timeout instead.
+    max: isServerless ? 4 : 10,
     prepare: !(isServerless || isPooler),
-    idle_timeout: 20,
+    idle_timeout: isServerless ? 10 : 20,
     connect_timeout: 10,
   });
 
