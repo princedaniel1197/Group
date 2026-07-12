@@ -5,6 +5,7 @@ import { Wall } from "./Wall";
 import { Lightbox } from "./Lightbox";
 import { Composer } from "./Composer";
 import { GateDialog } from "./GateDialog";
+import { MusicToggle } from "./MusicToggle";
 import { fetchPhotos } from "@/lib/api";
 import type { PhotoDTO, PhotosListDTO } from "@/lib/types";
 
@@ -113,6 +114,8 @@ export function Album({ initial }: AlbumProps) {
           setGateOpen(true);
         }}
       />
+      <MusicToggle />
+
       <Lightbox
         key={selected?.id ?? "none"}
         photo={selected}
