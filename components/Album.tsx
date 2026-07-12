@@ -20,6 +20,33 @@ const personChip = (active: boolean) =>
       : "bg-ink-raised text-cream-muted ring-1 ring-line hover:text-cream"
   }`;
 
+type Arrange = "newest" | "oldest" | "shuffle";
+
+function mulberry32(a: number) {
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function arrangePhotos(photos: PhotoDTO[], mode: Arrange, seed: number): PhotoDTO[] {
+  const arr = photos.slice();
+  const t = (p: PhotoDTO) => new Date(p.createdAt).getTime();
+  if (mode === "oldest") arr.sort((a, b) => t(a) - t(b));
+  else if (mode === "newest") arr.sort((a, b) => t(b) - t(a));
+  else {
+    const rnd = mulberry32(seed);
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+  return arr;
+}
+
 /**
  * Client orchestrator: holds the wall state and coordinates the composer and
  * lightbox. Contributing is open — no passphrase.
@@ -29,6 +56,8 @@ export function Album({ initial }: AlbumProps) {
   const [composerOpen, setComposerOpen] = useState(false);
   const [selected, setSelected] = useState<PhotoDTO | null>(null);
   const [person, setPerson] = useState<string | null>(null);
+  const [arrange, setArrange] = useState<Arrange>("newest");
+  const [seed, setSeed] = useState(1);
 
   const refresh = useCallback(async () => {
     try {
@@ -48,9 +77,13 @@ export function Album({ initial }: AlbumProps) {
     return [...m.entries()].sort((a, b) => b[1] - a[1]);
   }, [photos]);
 
+  const arranged = useMemo(
+    () => arrangePhotos(photos, arrange, seed),
+    [photos, arrange, seed],
+  );
   const shown = person
-    ? photos.filter((p) => p.people?.includes(person))
-    : photos;
+    ? arranged.filter((p) => p.people?.includes(person))
+    : arranged;
 
   return (
     <div className="atmosphere relative flex min-h-full flex-1 flex-col">
@@ -95,6 +128,29 @@ export function Album({ initial }: AlbumProps) {
         </div>
       ) : null}
 
+      {photos.length > 1 ? (
+        <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
+          <div className="flex items-center justify-end gap-1.5 pb-3">
+            <span className="mr-1 font-mono text-[10px] tracking-widest text-cream-muted uppercase">
+              arrange
+            </span>
+            {(["newest", "oldest", "shuffle"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => {
+                  setArrange(mode);
+                  if (mode === "shuffle") setSeed((s) => s + 1);
+                }}
+                className={personChip(arrange === mode)}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 pb-16 sm:px-10">
         {photos.length === 0 ? (
           <EmptyState onPin={onPin} />
@@ -111,7 +167,7 @@ export function Album({ initial }: AlbumProps) {
             <Wall photos={shown} onOpen={setSelected} />
           </section>
         ) : (
-          <EventSections photos={photos} onOpen={setSelected} />
+          <EventSections photos={arranged} onOpen={setSelected} />
         )}
       </main>
 
