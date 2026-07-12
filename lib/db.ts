@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
+import { resolveDatabaseUrl } from "./db-url";
 
 /**
  * Drizzle client over postgres-js.
@@ -15,9 +16,9 @@ import * as schema from "./schema";
  */
 
 function createClient() {
-  const url = process.env.DATABASE_URL;
+  const url = resolveDatabaseUrl();
   if (!url) {
-    throw new Error("DATABASE_URL is not set");
+    throw new Error("DATABASE_URL (or POSTGRES_URL) is not set");
   }
 
   // Railway's private network (`*.railway.internal`) does not offer TLS;

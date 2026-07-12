@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { photos } from "@/lib/schema";
 import { presignGet } from "@/lib/s3";
+import { resolveDatabaseUrl } from "@/lib/db-url";
 import { ok, notFound, errorResponse } from "@/lib/http";
 import { TTL_ORIGINAL } from "@/lib/constants";
 
@@ -19,7 +20,7 @@ export async function GET(_request: Request, { params }: Ctx) {
     const { id: photoId } = await params;
 
     // Preview mode: serve the locally-generated display image.
-    if (process.env.KEEPSAKE_DEMO === "1" && !process.env.DATABASE_URL) {
+    if (process.env.KEEPSAKE_DEMO === "1" && !resolveDatabaseUrl()) {
       const m = photoId.match(/^demo-(\d+)$/);
       if (m) return ok({ url: `/demo/full/${m[1]}.jpg` });
     }

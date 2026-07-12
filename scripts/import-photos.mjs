@@ -83,7 +83,12 @@ async function main() {
   let sql = null;
   if (!args.dryRun) {
     bucket = requireEnv("S3_BUCKET");
-    const dbUrl = requireEnv("DATABASE_URL");
+    // Prefer a direct (non-pooling) URL for bulk inserts; accept Supabase names.
+    const dbUrl =
+      process.env.POSTGRES_URL_NON_POOLING ||
+      process.env.DATABASE_URL ||
+      process.env.POSTGRES_URL;
+    if (!dbUrl) throw new Error("Missing DATABASE_URL (or POSTGRES_URL)");
     s3 = new S3Client({
       endpoint: requireEnv("S3_ENDPOINT"),
       region: requireEnv("S3_REGION"),

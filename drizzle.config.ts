@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import { defineConfig } from "drizzle-kit";
+import { resolveMigrationUrl } from "./lib/db-url";
 
 // drizzle-kit runs outside Next, so load .env.local (fall back to .env) ourselves.
 config({ path: ".env.local" });
@@ -15,7 +16,7 @@ export default defineConfig({
   schema: "./lib/schema.ts",
   out: "./drizzle",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "",
+    url: resolveMigrationUrl() ?? "",
   },
   strict: true,
   verbose: true,

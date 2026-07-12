@@ -1,6 +1,7 @@
 import "server-only";
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "./db";
+import { resolveDatabaseUrl } from "./db-url";
 import { photos, reactions, comments } from "./schema";
 import { isContributor, getClientId } from "./gate";
 import { presignGet } from "./s3";
@@ -15,7 +16,7 @@ import type { PhotoDTO, PhotosListDTO } from "./types";
 export async function listPhotos(): Promise<PhotosListDTO> {
   // Not configured yet (first boot / preview): show an empty album instead of
   // crashing. Real DB errors while configured still propagate.
-  if (!process.env.DATABASE_URL) {
+  if (!resolveDatabaseUrl()) {
     if (process.env.KEEPSAKE_DEMO === "1") {
       const { demoAlbum } = await import("./demo");
       return demoAlbum();

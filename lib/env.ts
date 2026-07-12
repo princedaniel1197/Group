@@ -1,4 +1,5 @@
 import "server-only";
+import { resolveDatabaseUrl } from "./db-url";
 
 /**
  * Server-only environment access. Importing this from a client component is a
@@ -15,7 +16,9 @@ function requireEnv(name: string): string {
 
 export const env = {
   get databaseUrl(): string {
-    return requireEnv("DATABASE_URL");
+    const url = resolveDatabaseUrl();
+    if (!url) throw new Error("Missing DATABASE_URL (or POSTGRES_URL)");
+    return url;
   },
   get s3Endpoint(): string {
     return requireEnv("S3_ENDPOINT");
