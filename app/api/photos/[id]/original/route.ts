@@ -17,6 +17,13 @@ type Ctx = { params: Promise<{ id: string }> };
 export async function GET(_request: Request, { params }: Ctx) {
   try {
     const { id: photoId } = await params;
+
+    // Preview mode: serve the locally-generated display image.
+    if (process.env.KEEPSAKE_DEMO === "1" && !process.env.DATABASE_URL) {
+      const m = photoId.match(/^demo-(\d+)$/);
+      if (m) return ok({ url: `/demo/full/${m[1]}.jpg` });
+    }
+
     const [photo] = await db
       .select({ storageKey: photos.storageKey })
       .from(photos)
