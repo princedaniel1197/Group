@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Wall } from "./Wall";
 import { Lightbox } from "./Lightbox";
 import { Composer } from "./Composer";
@@ -12,6 +12,13 @@ interface AlbumProps {
   initial: PhotosListDTO;
 }
 
+const personChip = (active: boolean) =>
+  `rounded-full px-3 py-1 font-mono text-[11px] tracking-wide transition-colors ${
+    active
+      ? "bg-safelight text-ink"
+      : "bg-ink-raised text-cream-muted ring-1 ring-line hover:text-cream"
+  }`;
+
 /**
  * Client orchestrator: holds the wall state and coordinates the composer and
  * lightbox. Contributing is open — no passphrase.
@@ -20,6 +27,7 @@ export function Album({ initial }: AlbumProps) {
   const [photos, setPhotos] = useState<PhotoDTO[]>(initial.photos);
   const [composerOpen, setComposerOpen] = useState(false);
   const [selected, setSelected] = useState<PhotoDTO | null>(null);
+  const [person, setPerson] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -31,6 +39,17 @@ export function Album({ initial }: AlbumProps) {
   }, []);
 
   const onPin = useCallback(() => setComposerOpen(true), []);
+
+  // People (with counts), most-photographed first.
+  const peopleCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of photos) for (const name of p.people ?? []) m.set(name, (m.get(name) ?? 0) + 1);
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  }, [photos]);
+
+  const shown = person
+    ? photos.filter((p) => p.people?.includes(person))
+    : photos;
 
   return (
     <div className="atmosphere relative flex min-h-full flex-1 flex-col">
@@ -59,9 +78,50 @@ export function Album({ initial }: AlbumProps) {
         </button>
       </header>
 
+      {peopleCounts.length > 0 ? (
+        <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
+          <div className="flex flex-wrap items-center gap-1.5 pb-5">
+            <span className="mr-1 font-mono text-[10px] tracking-widest text-cream-muted uppercase">
+              people
+            </span>
+            {peopleCounts.map(([name, count]) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => setPerson(person === name ? null : name)}
+                className={personChip(person === name)}
+              >
+                {name} <span className="opacity-60">{count}</span>
+              </button>
+            ))}
+            {person ? (
+              <button
+                type="button"
+                onClick={() => setPerson(null)}
+                className="ml-1 rounded-full px-2 py-1 font-mono text-[11px] text-cream-muted hover:text-safelight"
+              >
+                show all
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 pb-16 sm:px-10">
         {photos.length === 0 ? (
           <EmptyState onPin={onPin} />
+        ) : person ? (
+          <section>
+            <div className="mb-5 flex items-baseline gap-3 border-b border-line pb-2">
+              <h2 className="font-display text-2xl font-semibold text-cream sm:text-3xl">
+                Photos of {person}
+              </h2>
+              <span className="font-mono text-[11px] tracking-widest text-cream-muted uppercase">
+                {shown.length} {shown.length === 1 ? "photo" : "photos"}
+              </span>
+            </div>
+            <Wall photos={shown} onOpen={setSelected} />
+          </section>
         ) : (
           <EventSections photos={photos} onOpen={setSelected} />
         )}

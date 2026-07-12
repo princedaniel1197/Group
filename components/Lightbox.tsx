@@ -267,6 +267,24 @@ export function Lightbox({
             ) : null}
           </div>
 
+          {photo.people && photo.people.length > 0 ? (
+            <div className="mt-3 border-b border-line pb-3">
+              <p className="mb-2 font-mono text-[10px] tracking-widest text-cream-muted uppercase">
+                in this photo
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {photo.people.map((p) => (
+                  <span
+                    key={p}
+                    className="rounded-full bg-ink px-2.5 py-1 font-mono text-[11px] text-cream ring-1 ring-line"
+                  >
+                    {p}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <ul className="mt-3 flex-1 space-y-3 overflow-y-auto pr-1">
             {comments.length === 0 ? (
               <li className="font-hand text-xl text-cream-muted/70">

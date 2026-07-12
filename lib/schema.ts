@@ -31,6 +31,7 @@ export const photos = pgTable(
     altText: text("alt_text"), // filled by enrichment later (§8)
     tags: text("tags").array(), // filled by enrichment later (§8)
     event: text("event"), // which occasion this photo is from (single event)
+    people: text("people").array(), // who's in the photo (face recognition)
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
