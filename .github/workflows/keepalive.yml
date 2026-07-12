@@ -1,0 +1,19 @@
+name: keepalive
+
+# Pings the live site once a day so the Supabase free-tier project never hits
+# its 7-day idle pause (a request keeps both Vercel and the database warm).
+on:
+  schedule:
+    - cron: "0 6 * * *" # daily at 06:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Warm the app + database
+        run: |
+          for path in / /api/photos; do
+            code=$(curl -sS -m 30 -o /dev/null -w "%{http_code}" "https://group-seven-woad.vercel.app${path}" || echo "000")
+            echo "GET ${path} -> ${code}"
+          done
