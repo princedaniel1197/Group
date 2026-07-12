@@ -62,6 +62,17 @@ export function Modal({
       }}
     >
       <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px]" />
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Back"
+        className="absolute top-4 right-4 z-[110] flex items-center gap-1.5 rounded-full border border-line bg-ink-raised/90 px-3.5 py-2 font-mono text-xs tracking-wide text-cream shadow-lg backdrop-blur-sm transition-colors hover:border-safelight-dim hover:text-safelight"
+      >
+        <span aria-hidden className="text-base leading-none">
+          ←
+        </span>
+        back
+      </button>
       <div
         ref={panelRef}
         role="dialog"
