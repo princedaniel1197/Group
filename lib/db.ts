@@ -27,13 +27,15 @@ function createClient() {
 
   // On serverless (Vercel), each function instance is its own process, so a big
   // pool per instance would exhaust Postgres. Keep 1 connection and disable
-  // prepared statements for transaction-mode poolers (PgBouncer/Neon/Supabase).
+  // prepared statements for transaction-mode poolers (PgBouncer/Supavisor),
+  // which don't support them and can hang/error otherwise.
   const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  const isPooler = /pooler\.supabase\.com|:6543|pgbouncer=true/.test(url);
 
   const client = postgres(url, {
     ssl: isInternal ? false : "require",
     max: isServerless ? 1 : 10,
-    prepare: !isServerless,
+    prepare: !(isServerless || isPooler),
     idle_timeout: 20,
     connect_timeout: 10,
   });
