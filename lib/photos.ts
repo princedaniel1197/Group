@@ -13,6 +13,16 @@ import type { PhotoDTO, PhotosListDTO } from "./types";
  * (initial SSR) and GET /api/photos (client refresh). Never leaks storage keys.
  */
 export async function listPhotos(): Promise<PhotosListDTO> {
+  // Not configured yet (first boot / preview): show an empty album instead of
+  // crashing. Real DB errors while configured still propagate.
+  if (!process.env.DATABASE_URL) {
+    if (process.env.KEEPSAKE_DEMO === "1") {
+      const { demoAlbum } = await import("./demo");
+      return demoAlbum();
+    }
+    return { photos: [], viewer: { isContributor: false } };
+  }
+
   const [rows, viewerIsContributor, clientId] = await Promise.all([
     db.select().from(photos).orderBy(desc(photos.createdAt)),
     isContributor(),
