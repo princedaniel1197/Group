@@ -66,6 +66,7 @@ export async function listPhotos(): Promise<PhotosListDTO> {
       createdAt: p.createdAt.toISOString(),
       altText: p.altText,
       tags: p.tags,
+      event: p.event,
       hearts: heartsByPhoto.get(p.id) ?? 0,
       comments: commentsByPhoto.get(p.id) ?? 0,
       viewerReacted: reactedSet.has(p.id),

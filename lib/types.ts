@@ -11,6 +11,7 @@ export interface PhotoDTO {
   createdAt: string; // ISO string
   altText: string | null;
   tags: string[] | null;
+  event: string | null;
   hearts: number;
   comments: number;
   viewerReacted: boolean; // this browser has a heart on it

@@ -95,7 +95,7 @@ export function Album({ initial }: AlbumProps) {
         {photos.length === 0 ? (
           <EmptyState onPin={onPin} />
         ) : (
-          <Wall photos={photos} onOpen={setSelected} />
+          <EventSections photos={photos} onOpen={setSelected} />
         )}
       </main>
 
@@ -126,6 +126,68 @@ export function Album({ initial }: AlbumProps) {
         }}
         onChanged={refresh}
       />
+    </div>
+  );
+}
+
+interface EventGroup {
+  event: string; // "" = unsorted
+  list: PhotoDTO[];
+  earliest: number;
+}
+
+function groupByEvent(photos: PhotoDTO[]): EventGroup[] {
+  const map = new Map<string, PhotoDTO[]>();
+  for (const p of photos) {
+    const key = p.event ?? "";
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(p);
+  }
+  const groups: EventGroup[] = [...map.entries()].map(([event, list]) => ({
+    event,
+    list,
+    earliest: Math.min(
+      ...list.map((p) => new Date(p.takenAt ?? p.createdAt).getTime()),
+    ),
+  }));
+  // Tagged events chronological (by earliest photo); Unsorted last.
+  groups.sort((a, b) => {
+    if (a.event === "") return 1;
+    if (b.event === "") return -1;
+    return a.earliest - b.earliest;
+  });
+  return groups;
+}
+
+function EventSections({
+  photos,
+  onOpen,
+}: {
+  photos: PhotoDTO[];
+  onOpen: (p: PhotoDTO) => void;
+}) {
+  const groups = groupByEvent(photos);
+
+  // No events tagged yet → plain wall.
+  if (groups.length === 1 && groups[0].event === "") {
+    return <Wall photos={photos} onOpen={onOpen} />;
+  }
+
+  return (
+    <div className="space-y-16">
+      {groups.map((g) => (
+        <section key={g.event || "__unsorted"}>
+          <div className="mb-5 flex items-baseline gap-3 border-b border-line pb-2">
+            <h2 className="font-display text-2xl font-semibold text-cream sm:text-3xl">
+              {g.event || "Unsorted"}
+            </h2>
+            <span className="font-mono text-[11px] tracking-widest text-cream-muted uppercase">
+              {g.list.length} {g.list.length === 1 ? "photo" : "photos"}
+            </span>
+          </div>
+          <Wall photos={g.list} onOpen={onOpen} />
+        </section>
+      ))}
     </div>
   );
 }

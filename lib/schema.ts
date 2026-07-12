@@ -30,6 +30,7 @@ export const photos = pgTable(
     takenAt: timestamp("taken_at", { withTimezone: true }), // from EXIF if available
     altText: text("alt_text"), // filled by enrichment later (§8)
     tags: text("tags").array(), // filled by enrichment later (§8)
+    event: text("event"), // which occasion this photo is from (single event)
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
