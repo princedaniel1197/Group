@@ -62,6 +62,13 @@ export function saveProfile(
   return putJson(`/api/profiles/${encodeURIComponent(name)}`, data);
 }
 
+export function saveSetting(
+  key: string,
+  value: string | null,
+): Promise<{ value: string | null }> {
+  return putJson(`/api/settings/${encodeURIComponent(key)}`, { value });
+}
+
 export function verifyPassphrase(passphrase: string): Promise<{ ok: true }> {
   return postJson("/api/gate", { passphrase });
 }

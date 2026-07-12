@@ -22,6 +22,9 @@ export function SiteHeader({ action }: { action?: ReactNode }) {
           <Link href="/calendar" className="transition-colors hover:text-safelight">
             calendar
           </Link>
+          <Link href="/music" className="transition-colors hover:text-safelight">
+            music
+          </Link>
         </nav>
       </div>
       {action ? <div>{action}</div> : null}

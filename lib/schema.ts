@@ -90,6 +90,15 @@ export const profiles = pgTable("profiles", {
 });
 export type Profile = typeof profiles.$inferSelect;
 
+// Simple key/value site settings (e.g. the group's Spotify playlist URL).
+export const settings = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 // Inferred row types for use across the app.
 export type Photo = typeof photos.$inferSelect;
 export type NewPhoto = typeof photos.$inferInsert;
