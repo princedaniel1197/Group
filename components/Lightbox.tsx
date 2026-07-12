@@ -10,9 +10,11 @@ import {
   addComment,
   toggleReaction,
   deletePhoto,
+  setPhotoEvent,
   ApiError,
 } from "@/lib/api";
 import { MAX_COMMENT_LEN } from "@/lib/constants";
+import { EVENTS, MAX_EVENT_LEN } from "@/lib/events";
 import type { PhotoDTO, CommentDTO } from "@/lib/types";
 
 interface LightboxProps {
@@ -40,6 +42,9 @@ export function Lightbox({
   // so lazy initializers reset these cleanly without a sync effect.
   const [hearts, setHearts] = useState(photo?.hearts ?? 0);
   const [reacted, setReacted] = useState(photo?.viewerReacted ?? false);
+  const [event, setEvent] = useState<string | null>(photo?.event ?? null);
+  const [otherOpen, setOtherOpen] = useState(false);
+  const [otherText, setOtherText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,6 +79,24 @@ export function Lightbox({
       else setError("Couldn't update your heart.");
     }
   }, [photo, name, onChanged, onRequireGate]);
+
+  const chooseEvent = useCallback(
+    async (ev: string | null) => {
+      if (!photo) return;
+      setError(null);
+      try {
+        await setPhotoEvent(photo.id, ev);
+        setEvent(ev);
+        setOtherOpen(false);
+        setOtherText("");
+        onChanged();
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) onRequireGate();
+        else setError("Couldn't set the event.");
+      }
+    },
+    [photo, onChanged, onRequireGate],
+  );
 
   async function onAddComment(e: FormEvent) {
     e.preventDefault();
@@ -119,6 +142,13 @@ export function Lightbox({
 
   if (!photo) return null;
   const stamp = dateStamp(photo.takenAt ?? photo.createdAt, photo.authorName);
+  const isCustomEvent = !!event && !EVENTS.includes(event);
+  const chip = (active: boolean) =>
+    `rounded-full px-2.5 py-1 font-mono text-[11px] tracking-wide transition-colors ${
+      active
+        ? "bg-safelight text-ink"
+        : "bg-ink text-cream-muted ring-1 ring-line hover:text-cream"
+    }`;
 
   return (
     <Modal open={true} onClose={onClose} labelledBy="lightbox-title" size="lg">
@@ -175,6 +205,65 @@ export function Lightbox({
               >
                 delete
               </button>
+            ) : null}
+          </div>
+
+          {/* Event picker */}
+          <div className="mt-3 border-b border-line pb-3">
+            <p className="mb-2 font-mono text-[10px] tracking-widest text-cream-muted uppercase">
+              event
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {EVENTS.map((ev) => (
+                <button
+                  key={ev}
+                  type="button"
+                  onClick={() => chooseEvent(ev)}
+                  className={chip(event === ev)}
+                >
+                  {ev}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setOtherOpen((v) => !v)}
+                className={chip(isCustomEvent)}
+              >
+                {isCustomEvent ? event : "other…"}
+              </button>
+              {event ? (
+                <button
+                  type="button"
+                  onClick={() => chooseEvent(null)}
+                  className="rounded-full px-2 py-1 font-mono text-[11px] text-cream-muted hover:text-red-300"
+                >
+                  clear
+                </button>
+              ) : null}
+            </div>
+            {otherOpen ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const v = otherText.trim();
+                  if (v) void chooseEvent(v);
+                }}
+                className="mt-2 flex gap-2"
+              >
+                <input
+                  value={otherText}
+                  maxLength={MAX_EVENT_LEN}
+                  onChange={(e) => setOtherText(e.target.value)}
+                  placeholder="type an event…"
+                  className="flex-1 rounded-md border border-line bg-ink px-2 py-1 text-sm text-cream placeholder:text-cream-muted/60 focus:border-safelight-dim"
+                />
+                <button
+                  type="submit"
+                  className="rounded-full bg-safelight px-3 py-1 font-mono text-xs font-semibold text-ink"
+                >
+                  set
+                </button>
+              </form>
             ) : null}
           </div>
 

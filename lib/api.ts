@@ -104,6 +104,13 @@ export function toggleReaction(
   return postJson(`/api/photos/${photoId}/reactions`, { name });
 }
 
+export function setPhotoEvent(
+  photoId: string,
+  event: string | null,
+): Promise<{ event: string | null }> {
+  return postJson(`/api/photos/${photoId}/event`, { event });
+}
+
 export function fetchComments(photoId: string): Promise<CommentDTO[]> {
   return fetch(`/api/photos/${photoId}/comments`, { cache: "no-store" }).then(
     (res) => unwrap<CommentDTO[]>(res),
