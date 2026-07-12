@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Caveat, JetBrains_Mono } from "next/font/google";
+import { IntroGate } from "@/components/IntroGate";
 import "./globals.css";
 
 // Display / headings — Fraunces (variable, optical sizing looks great large)
@@ -40,7 +41,10 @@ export default function RootLayout({
       lang="en"
       className={`${fraunces.variable} ${caveat.variable} ${jbmono.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col antialiased">{children}</body>
+      <body className="min-h-full flex flex-col antialiased">
+        <IntroGate />
+        {children}
+      </body>
     </html>
   );
 }
