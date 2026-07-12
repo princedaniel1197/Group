@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# bulk import state (per-machine)
+scripts/.import-state.json
+
 # vercel
 .vercel
 
