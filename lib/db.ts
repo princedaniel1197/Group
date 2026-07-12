@@ -1,7 +1,13 @@
+import dns from "node:dns";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 import { resolveDatabaseUrl } from "./db-url";
+
+// Supabase pooler hosts are dual-stack (A + AAAA). On serverless runtimes that
+// can't route IPv6, picking the AAAA address black-holes and the connection
+// hangs until the function times out — intermittently. Prefer IPv4 to avoid it.
+dns.setDefaultResultOrder("ipv4first");
 
 /**
  * Drizzle client over postgres-js.
