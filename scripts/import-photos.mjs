@@ -31,6 +31,8 @@ const DISPLAY_QUALITY = 90;
 const THUMB_MAX_EDGE = 600;
 const THUMB_QUALITY = 80;
 const CONTENT_TYPE = "image/jpeg";
+// Content-addressed keys never change, so cache them hard (public bucket + CDN).
+const CACHE_CONTROL = "public, max-age=31536000, immutable";
 const AUTHOR_CLIENT_ID = "bulk-import";
 const STATE_FILE = "scripts/.import-state.json";
 
@@ -60,6 +62,19 @@ async function readTakenAt(path) {
   } catch {
     return null;
   }
+}
+
+// Fallback for exports that strip EXIF (e.g. WhatsApp): parse the timestamp in
+// the filename, e.g. "...2026-07-12 at 7.51.22 PM...".
+function parseNameDate(name) {
+  const m = name.match(/(\d{4})-(\d{2})-(\d{2}) at (\d{1,2})\.(\d{2})\.(\d{2})\s*(AM|PM)/i);
+  if (!m) return null;
+  let [, y, mo, d, h, mi, s, ap] = m;
+  h = Number(h);
+  if (/pm/i.test(ap) && h !== 12) h += 12;
+  if (/am/i.test(ap) && h === 12) h = 0;
+  const dt = new Date(Number(y), Number(mo) - 1, Number(d), h, Number(mi), Number(s));
+  return Number.isNaN(dt.getTime()) ? null : dt;
 }
 
 async function encode(path, maxEdge, quality) {
@@ -122,7 +137,7 @@ async function main() {
     if (state[key]) { skipped++; return; }
 
     try {
-      const takenAt = await readTakenAt(path);
+      const takenAt = (await readTakenAt(path)) ?? parseNameDate(file);
       const [display, thumb] = await Promise.all([
         encode(path, DISPLAY_MAX_EDGE, DISPLAY_QUALITY),
         encode(path, THUMB_MAX_EDGE, THUMB_QUALITY),
@@ -134,8 +149,8 @@ async function main() {
 
       if (!args.dryRun) {
         await Promise.all([
-          s3.send(new PutObjectCommand({ Bucket: bucket, Key: storageKey, Body: display.buffer, ContentType: CONTENT_TYPE })),
-          s3.send(new PutObjectCommand({ Bucket: bucket, Key: thumbKey, Body: thumb.buffer, ContentType: CONTENT_TYPE })),
+          s3.send(new PutObjectCommand({ Bucket: bucket, Key: storageKey, Body: display.buffer, ContentType: CONTENT_TYPE, CacheControl: CACHE_CONTROL })),
+          s3.send(new PutObjectCommand({ Bucket: bucket, Key: thumbKey, Body: thumb.buffer, ContentType: CONTENT_TYPE, CacheControl: CACHE_CONTROL })),
         ]);
         await sql`
           INSERT INTO photos (id, storage_key, thumb_key, caption, author_name, author_client_id, width, height, taken_at)
