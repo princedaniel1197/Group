@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { photos } from "@/lib/schema";
 import { isContributor, getClientId } from "@/lib/gate";
 import { enrich } from "@/lib/enrich";
@@ -64,6 +64,7 @@ export async function POST(request: Request) {
       return fail("Invalid storageKey", 400);
     }
 
+    const db = await getDb();
     const [row] = await db
       .insert(photos)
       .values({

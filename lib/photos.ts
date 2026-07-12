@@ -1,6 +1,6 @@
 import "server-only";
 import { desc, eq, sql } from "drizzle-orm";
-import { db } from "./db";
+import { getDb } from "./db";
 import { resolveDatabaseUrl } from "./db-url";
 import { photos, reactions, comments } from "./schema";
 import { isContributor, getClientId } from "./gate";
@@ -24,6 +24,7 @@ export async function listPhotos(): Promise<PhotosListDTO> {
     return { photos: [], viewer: { isContributor: false } };
   }
 
+  const db = await getDb();
   const [rows, viewerIsContributor, clientId] = await Promise.all([
     db.select().from(photos).orderBy(desc(photos.createdAt)),
     isContributor(),

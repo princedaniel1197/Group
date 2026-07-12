@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { photos } from "@/lib/schema";
 import { presignGet, publicObjectUrl } from "@/lib/s3";
 import { resolveDatabaseUrl } from "@/lib/db-url";
@@ -25,6 +25,7 @@ export async function GET(_request: Request, { params }: Ctx) {
       if (m) return ok({ url: `/demo/full/${m[1]}.jpg` });
     }
 
+    const db = await getDb();
     const [photo] = await db
       .select({ storageKey: photos.storageKey })
       .from(photos)

@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { photos } from "@/lib/schema";
 import { isContributor, getClientId } from "@/lib/gate";
 import { deleteObjects } from "@/lib/s3";
@@ -24,6 +24,7 @@ export async function DELETE(_request: Request, { params }: Ctx) {
 
     const { id: photoId } = await params;
 
+    const db = await getDb();
     const [photo] = await db
       .select({
         id: photos.id,

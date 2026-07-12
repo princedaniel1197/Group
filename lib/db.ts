@@ -1,25 +1,12 @@
 import dns from "node:dns";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 import { resolveDatabaseUrl } from "./db-url";
 
-// Supabase pooler hosts are dual-stack (A + AAAA). On serverless runtimes that
-// can't route IPv6, picking the AAAA address black-holes and the connection
-// hangs until the function times out — intermittently. Prefer IPv4 to avoid it.
+// Supabase pooler hosts are IPv4; the *direct* host is IPv6-only. Prefer IPv4
+// so a stray AAAA lookup can't black-hole a connection on serverless.
 dns.setDefaultResultOrder("ipv4first");
-
-/**
- * Drizzle client over postgres-js.
- *
- * The client is created LAZILY (on first query), not at import time — otherwise
- * `next build`'s page-data collection would import route modules and immediately
- * require DATABASE_URL, which isn't present at build. A Proxy defers creation
- * while keeping the `db.select(...)` call sites unchanged.
- *
- * The instance is cached on `globalThis` so Next's dev HMR doesn't open a new
- * pool on every reload (which would exhaust Postgres connections).
- */
 
 function createClient() {
   const url = resolveDatabaseUrl();
@@ -27,18 +14,13 @@ function createClient() {
     throw new Error("DATABASE_URL (or POSTGRES_URL) is not set");
   }
 
-  // Railway's private network (`*.railway.internal`) does not offer TLS;
-  // the public proxy requires it. Pick automatically.
   const isInternal = url.includes(".railway.internal");
-
-  // On serverless (Vercel), each function instance is its own process, so a big
-  // pool per instance would exhaust Postgres. Keep 1 connection and disable
-  // prepared statements for transaction-mode poolers (PgBouncer/Supavisor),
-  // which don't support them and can hang/error otherwise.
-  const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  const isServerless =
+    !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  // Transaction poolers (Supavisor/PgBouncer) don't support prepared statements.
   const isPooler = /pooler\.supabase\.com|:6543|pgbouncer=true/.test(url);
 
-  const client = postgres(url, {
+  const sql = postgres(url, {
     ssl: isInternal ? false : "require",
     max: isServerless ? 1 : 10,
     prepare: !(isServerless || isPooler),
@@ -46,24 +28,46 @@ function createClient() {
     connect_timeout: 10,
   });
 
-  return drizzle(client, { schema });
+  return { sql, db: drizzle(sql, { schema }) };
 }
 
-type Db = ReturnType<typeof createClient>;
+type Client = ReturnType<typeof createClient>;
+const globalForDb = globalThis as unknown as { keepsakeClient?: Client };
 
-const globalForDb = globalThis as unknown as { keepsakeDb?: Db };
+function preflightTimeout(ms: number): Promise<never> {
+  return new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("db preflight timeout")), ms),
+  );
+}
 
-function getDb(): Db {
-  if (!globalForDb.keepsakeDb) {
-    globalForDb.keepsakeDb = createClient();
+/**
+ * Return a healthy Drizzle client.
+ *
+ * Serverless instances suspend between invocations, and their cached TCP
+ * connection to the pooler can die silently — the next query then hangs on a
+ * dead socket until the function times out. We preflight a `select 1` against a
+ * short timeout and recycle the client if it's stale (Supabase's recommended
+ * fix for CONNECT_TIMEOUT / hanging queries on Vercel serverless).
+ */
+export async function getDb(): Promise<PostgresJsDatabase<typeof schema>> {
+  if (!globalForDb.keepsakeClient) {
+    globalForDb.keepsakeClient = createClient();
   }
-  return globalForDb.keepsakeDb;
-}
 
-export const db = new Proxy({} as Db, {
-  get(_target, prop, receiver) {
-    const real = getDb();
-    const value = Reflect.get(real as object, prop, receiver);
-    return typeof value === "function" ? value.bind(real) : value;
-  },
-}) as Db;
+  try {
+    await Promise.race([
+      globalForDb.keepsakeClient.sql`select 1`,
+      preflightTimeout(3000),
+    ]);
+  } catch {
+    // Stale/broken connection — drop it and make a fresh one.
+    try {
+      await globalForDb.keepsakeClient.sql.end({ timeout: 1 });
+    } catch {
+      // ignore
+    }
+    globalForDb.keepsakeClient = createClient();
+  }
+
+  return globalForDb.keepsakeClient.db;
+}

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { and, eq, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { photos, reactions } from "@/lib/schema";
 import { isContributor, getClientId } from "@/lib/gate";
 import { ok, fail, unauthorized, notFound, errorResponse } from "@/lib/http";
@@ -29,6 +29,7 @@ export async function POST(request: Request, { params }: Ctx) {
     const { id: photoId } = await params;
     const { name } = schema.parse(await request.json());
 
+    const db = await getDb();
     const existing = await db
       .select({ id: reactions.id })
       .from(reactions)

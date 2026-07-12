@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { asc, eq } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { photos, comments } from "@/lib/schema";
 import { isContributor, getClientId } from "@/lib/gate";
 import {
@@ -22,6 +22,7 @@ type Ctx = { params: Promise<{ id: string }> };
 export async function GET(_request: Request, { params }: Ctx) {
   try {
     const { id: photoId } = await params;
+    const db = await getDb();
     const rows = await db
       .select()
       .from(comments)
@@ -61,6 +62,7 @@ export async function POST(request: Request, { params }: Ctx) {
     const { id: photoId } = await params;
     const input = postSchema.parse(await request.json());
 
+    const db = await getDb();
     const photo = await db
       .select({ id: photos.id })
       .from(photos)
