@@ -50,24 +50,27 @@ function preflightTimeout(ms: number): Promise<never> {
  * fix for CONNECT_TIMEOUT / hanging queries on Vercel serverless).
  */
 export async function getDb(): Promise<PostgresJsDatabase<typeof schema>> {
-  if (!globalForDb.keepsakeClient) {
-    globalForDb.keepsakeClient = createClient();
-  }
-
-  try {
-    await Promise.race([
-      globalForDb.keepsakeClient.sql`select 1`,
-      preflightTimeout(3000),
-    ]);
-  } catch {
-    // Stale/broken connection — drop it and make a fresh one.
-    try {
-      await globalForDb.keepsakeClient.sql.end({ timeout: 1 });
-    } catch {
-      // ignore
+  // Up to 3 attempts: preflight a fresh/cached connection against a short
+  // timeout; if it's stale or the connect stalls, discard and try again. This
+  // survives both dead cached sockets and an intermittently bad pooler address.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (!globalForDb.keepsakeClient) {
+      globalForDb.keepsakeClient = createClient();
     }
-    globalForDb.keepsakeClient = createClient();
+    try {
+      await Promise.race([
+        globalForDb.keepsakeClient.sql`select 1`,
+        preflightTimeout(3500),
+      ]);
+      return globalForDb.keepsakeClient.db;
+    } catch {
+      const stale = globalForDb.keepsakeClient;
+      globalForDb.keepsakeClient = undefined;
+      stale?.sql.end({ timeout: 1 }).catch(() => {});
+    }
   }
 
+  // Last resort — hand back a fresh client and let the query attempt run.
+  globalForDb.keepsakeClient = createClient();
   return globalForDb.keepsakeClient.db;
 }
