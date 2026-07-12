@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ *
+ * keepsake — "darkroom keepsake" design tokens (spec §9)
+ * ------------------------------------------------------------------ */
+:root {
+  /* palette */
+  --ink: #171310; /* deep warm ink background */
+  --ink-raised: #211b16; /* slightly lifted surface */
+  --safelight: #e8a23d; /* amber accent */
+  --safelight-dim: #b9822f;
+  --cream: #ede6da; /* primary text */
+  --cream-muted: #a89c88; /* secondary text */
+  --print: #f7f3ea; /* photo paper */
+  --line: #362d24; /* hairline borders on ink */
+
+  /* framing */
+  --shadow-print: 0 18px 34px -18px rgba(0, 0, 0, 0.7),
+    0 4px 10px -6px rgba(0, 0, 0, 0.5);
+}
+
+/* Map raw tokens into Tailwind's theme so utilities exist:
+   bg-ink, text-cream, text-safelight, bg-print, font-display, etc. */
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-raised: var(--ink-raised);
+  --color-safelight: var(--safelight);
+  --color-safelight-dim: var(--safelight-dim);
+  --color-cream: var(--cream);
+  --color-cream-muted: var(--cream-muted);
+  --color-print: var(--print);
+  --color-line: var(--line);
+
+  --font-display: var(--font-fraunces);
+  --font-hand: var(--font-caveat);
+  --font-mono: var(--font-jbmono);
+}
+
+/* ------------------------------------------------------------------ *
+ * Base
+ * ------------------------------------------------------------------ */
+html {
+  background: var(--ink);
+}
+
+body {
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--safelight) 35%, transparent);
+  color: var(--cream);
+}
+
+/* Visible keyboard focus everywhere (spec quality floor) */
+:focus-visible {
+  outline: 2px solid var(--safelight);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Atmosphere: fixed vignette + faint film grain over everything.
+ * Both are pointer-events:none so they never intercept clicks.
+ * ------------------------------------------------------------------ */
+.atmosphere::before,
+.atmosphere::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* vignette — darken the edges of the room */
+.atmosphere::before {
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    transparent 52%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
+}
+
+/* film grain — tiny fractal-noise tile, blended low */
+.atmosphere::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+}
+
+/* ------------------------------------------------------------------ *
+ * Motion
+ * ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
