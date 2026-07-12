@@ -5,6 +5,7 @@ import { Wall } from "./Wall";
 import { Lightbox } from "./Lightbox";
 import { Composer } from "./Composer";
 import { MusicToggle } from "./MusicToggle";
+import { SiteHeader } from "./SiteHeader";
 import { fetchPhotos } from "@/lib/api";
 import type { PhotoDTO, PhotosListDTO } from "@/lib/types";
 
@@ -53,30 +54,17 @@ export function Album({ initial }: AlbumProps) {
 
   return (
     <div className="atmosphere relative flex min-h-full flex-1 flex-col">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 pt-10 pb-6 sm:px-10">
-        <div className="flex items-center gap-3">
-          <span
-            aria-hidden
-            className="inline-block h-2.5 w-2.5 rounded-full bg-safelight shadow-[0_0_14px_2px_var(--safelight)]"
-          />
-          <div>
-            <h1 className="font-display text-3xl leading-none font-semibold tracking-tight text-cream sm:text-4xl">
-              keepsake
-            </h1>
-            <p className="mt-1 font-mono text-[11px] tracking-widest text-cream-muted uppercase">
-              a shared album, developed by hand
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={onPin}
-          className="rounded-full border border-line bg-ink-raised px-5 py-2 font-mono text-xs tracking-wide text-cream transition-colors hover:border-safelight-dim hover:text-safelight"
-        >
-          pin a photo
-        </button>
-      </header>
+      <SiteHeader
+        action={
+          <button
+            type="button"
+            onClick={onPin}
+            className="rounded-full border border-line bg-ink-raised px-5 py-2 font-mono text-xs tracking-wide text-cream transition-colors hover:border-safelight-dim hover:text-safelight"
+          >
+            pin a photo
+          </button>
+        }
+      />
 
       {peopleCounts.length > 0 ? (
         <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">

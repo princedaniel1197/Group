@@ -4,6 +4,7 @@ import type {
   PresignDTO,
   CommentDTO,
   ReactionToggleDTO,
+  ProfileDTO,
 } from "./types";
 import { ALLOWED_CONTENT_TYPE } from "./constants";
 
@@ -44,6 +45,21 @@ function postJson<T>(url: string, body: unknown): Promise<T> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   }).then((res) => unwrap<T>(res));
+}
+
+function putJson<T>(url: string, body: unknown): Promise<T> {
+  return fetch(url, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then((res) => unwrap<T>(res));
+}
+
+export function saveProfile(
+  name: string,
+  data: { intro: string | null; dob: string | null; milestones: { date: string; text: string }[] },
+): Promise<ProfileDTO> {
+  return putJson(`/api/profiles/${encodeURIComponent(name)}`, data);
 }
 
 export function verifyPassphrase(passphrase: string): Promise<{ ok: true }> {

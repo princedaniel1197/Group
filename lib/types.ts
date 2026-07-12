@@ -44,6 +44,18 @@ export interface ReactionToggleDTO {
   hearts: number;
 }
 
+export interface Milestone {
+  date: string; // YYYY-MM or YYYY-MM-DD
+  text: string;
+}
+
+export interface ProfileDTO {
+  name: string;
+  intro: string | null;
+  dob: string | null;
+  milestones: Milestone[];
+}
+
 /** API envelope (mirrors lib/http.ts). */
 export type ApiResponse<T> =
   | { success: true; data: T }

@@ -6,6 +6,7 @@ import {
   timestamp,
   unique,
   index,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -71,6 +72,23 @@ export const comments = pgTable(
   },
   (t) => [index("comments_photo_id_idx").on(t.photoId)],
 );
+
+export interface Milestone {
+  date: string; // YYYY-MM or YYYY-MM-DD
+  text: string;
+}
+
+// Per-person profile for the personal pages.
+export const profiles = pgTable("profiles", {
+  name: text("name").primaryKey(),
+  intro: text("intro"),
+  dob: text("dob"), // YYYY-MM-DD
+  milestones: jsonb("milestones").$type<Milestone[]>().notNull().default([]),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+export type Profile = typeof profiles.$inferSelect;
 
 // Inferred row types for use across the app.
 export type Photo = typeof photos.$inferSelect;
