@@ -4,7 +4,7 @@ import { db } from "./db";
 import { resolveDatabaseUrl } from "./db-url";
 import { photos, reactions, comments } from "./schema";
 import { isContributor, getClientId } from "./gate";
-import { presignGet } from "./s3";
+import { presignGet, publicObjectUrl } from "./s3";
 import { TTL_THUMB } from "./constants";
 import type { PhotoDTO, PhotosListDTO } from "./types";
 
@@ -56,7 +56,7 @@ export async function listPhotos(): Promise<PhotosListDTO> {
   const dtos: PhotoDTO[] = await Promise.all(
     rows.map(async (p) => ({
       id: p.id,
-      thumbUrl: await presignGet(p.thumbKey, TTL_THUMB),
+      thumbUrl: publicObjectUrl(p.thumbKey) ?? (await presignGet(p.thumbKey, TTL_THUMB)),
       width: p.width,
       height: p.height,
       caption: p.caption,

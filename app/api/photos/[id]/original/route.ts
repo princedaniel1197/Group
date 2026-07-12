@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { photos } from "@/lib/schema";
-import { presignGet } from "@/lib/s3";
+import { presignGet, publicObjectUrl } from "@/lib/s3";
 import { resolveDatabaseUrl } from "@/lib/db-url";
 import { ok, notFound, errorResponse } from "@/lib/http";
 import { TTL_ORIGINAL } from "@/lib/constants";
@@ -33,7 +33,9 @@ export async function GET(_request: Request, { params }: Ctx) {
 
     if (!photo) return notFound("Photo not found");
 
-    const url = await presignGet(photo.storageKey, TTL_ORIGINAL);
+    const url =
+      publicObjectUrl(photo.storageKey) ??
+      (await presignGet(photo.storageKey, TTL_ORIGINAL));
     return ok({ url });
   } catch (error) {
     return errorResponse(error);

@@ -30,6 +30,19 @@ function client(): S3Client {
   return s3;
 }
 
+/**
+ * Public CDN URL for an object, when the bucket is public and
+ * STORAGE_PUBLIC_URL is set (e.g. Supabase's CDN-backed public path). Returns
+ * null when not configured — callers then fall back to a presigned URL.
+ * Public objects are cached at the edge, which is far faster than origin
+ * presigned fetches for the gallery wall.
+ */
+export function publicObjectUrl(key: string): string | null {
+  const base = process.env.STORAGE_PUBLIC_URL;
+  if (!base) return null;
+  return `${base.replace(/\/+$/, "")}/${key}`;
+}
+
 /** Presigned PUT URL for a direct browser upload (§7 step 2). */
 export function presignPut(
   key: string,
