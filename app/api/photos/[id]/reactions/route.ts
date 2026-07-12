@@ -2,8 +2,8 @@ import { z } from "zod";
 import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { photos, reactions } from "@/lib/schema";
-import { isContributor, getClientId } from "@/lib/gate";
-import { ok, fail, unauthorized, notFound, errorResponse } from "@/lib/http";
+import { ensureClientId } from "@/lib/gate";
+import { ok, notFound, errorResponse } from "@/lib/http";
 import { MAX_NAME_LEN } from "@/lib/constants";
 
 export const runtime = "nodejs";
@@ -21,11 +21,7 @@ type Ctx = { params: Promise<{ id: string }> };
  */
 export async function POST(request: Request, { params }: Ctx) {
   try {
-    if (!(await isContributor())) return unauthorized();
-
-    const clientId = await getClientId();
-    if (!clientId) return fail("Missing client id", 400);
-
+    const clientId = await ensureClientId();
     const { id: photoId } = await params;
     const { name } = schema.parse(await request.json());
 

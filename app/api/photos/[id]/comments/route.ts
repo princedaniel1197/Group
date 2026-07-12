@@ -2,14 +2,8 @@ import { z } from "zod";
 import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { photos, comments } from "@/lib/schema";
-import { isContributor, getClientId } from "@/lib/gate";
-import {
-  ok,
-  unauthorized,
-  notFound,
-  tooMany,
-  errorResponse,
-} from "@/lib/http";
+import { ensureClientId } from "@/lib/gate";
+import { ok, notFound, tooMany, errorResponse } from "@/lib/http";
 import { checkRateLimit, ipFrom } from "@/lib/rate-limit";
 import { MAX_NAME_LEN, MAX_COMMENT_LEN } from "@/lib/constants";
 import type { CommentDTO } from "@/lib/types";
@@ -49,9 +43,7 @@ const postSchema = z.object({
 /** POST /api/photos/[id]/comments (gated) — add a comment. */
 export async function POST(request: Request, { params }: Ctx) {
   try {
-    if (!(await isContributor())) return unauthorized();
-
-    const clientId = await getClientId();
+    const clientId = await ensureClientId();
     const rl = checkRateLimit(
       `comment:${clientId ?? ipFrom(request)}`,
       20,

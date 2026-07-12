@@ -2,8 +2,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { photos } from "@/lib/schema";
-import { isContributor } from "@/lib/gate";
-import { ok, unauthorized, notFound, errorResponse } from "@/lib/http";
+import { ok, notFound, errorResponse } from "@/lib/http";
 import { MAX_EVENT_LEN } from "@/lib/events";
 
 export const runtime = "nodejs";
@@ -20,8 +19,6 @@ const schema = z.object({
  */
 export async function POST(request: Request, { params }: Ctx) {
   try {
-    if (!(await isContributor())) return unauthorized();
-
     const { id: photoId } = await params;
     const { event } = schema.parse(await request.json());
     const value = event && event.length > 0 ? event : null;

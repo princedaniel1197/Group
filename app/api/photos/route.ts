@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { photos } from "@/lib/schema";
-import { isContributor, getClientId } from "@/lib/gate";
+import { ensureClientId } from "@/lib/gate";
 import { enrich } from "@/lib/enrich";
 import { listPhotos } from "@/lib/photos";
-import { ok, fail, unauthorized, errorResponse } from "@/lib/http";
+import { ok, fail, errorResponse } from "@/lib/http";
 import {
   MAX_CAPTION_LEN,
   MAX_NAME_LEN,
@@ -48,11 +48,7 @@ const postSchema = z.object({
  */
 export async function POST(request: Request) {
   try {
-    if (!(await isContributor())) return unauthorized();
-
-    const clientId = await getClientId();
-    if (!clientId) return fail("Missing client id", 400);
-
+    const clientId = await ensureClientId();
     const body = postSchema.parse(await request.json());
 
     // Derive the photo id from its storage key and confirm the thumb matches.

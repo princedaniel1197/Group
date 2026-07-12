@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Wall } from "./Wall";
 import { Lightbox } from "./Lightbox";
 import { Composer } from "./Composer";
-import { GateDialog } from "./GateDialog";
 import { MusicToggle } from "./MusicToggle";
 import { fetchPhotos } from "@/lib/api";
 import type { PhotoDTO, PhotosListDTO } from "@/lib/types";
@@ -14,55 +13,24 @@ interface AlbumProps {
 }
 
 /**
- * Client orchestrator: holds the wall state and coordinates the gate, composer,
- * and lightbox. Viewing needs nothing; posting routes through the gate first.
+ * Client orchestrator: holds the wall state and coordinates the composer and
+ * lightbox. Contributing is open — no passphrase.
  */
 export function Album({ initial }: AlbumProps) {
   const [photos, setPhotos] = useState<PhotoDTO[]>(initial.photos);
-  const [isContributor, setIsContributor] = useState(
-    initial.viewer.isContributor,
-  );
-  const [gateOpen, setGateOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [selected, setSelected] = useState<PhotoDTO | null>(null);
-
-  // Action to run once the gate is passed.
-  const pendingAction = useRef<(() => void) | null>(null);
 
   const refresh = useCallback(async () => {
     try {
       const data = await fetchPhotos();
       setPhotos(data.photos);
-      setIsContributor(data.viewer.isContributor);
     } catch {
       // leave the current wall in place on a transient failure
     }
   }, []);
 
-  const requireGate = useCallback(
-    (action: () => void) => {
-      if (isContributor) {
-        action();
-      } else {
-        pendingAction.current = action;
-        setGateOpen(true);
-      }
-    },
-    [isContributor],
-  );
-
-  const onGateSuccess = useCallback(() => {
-    setIsContributor(true);
-    setGateOpen(false);
-    const action = pendingAction.current;
-    pendingAction.current = null;
-    action?.();
-    void refresh();
-  }, [refresh]);
-
-  const onPin = useCallback(() => {
-    requireGate(() => setComposerOpen(true));
-  }, [requireGate]);
+  const onPin = useCallback(() => setComposerOpen(true), []);
 
   return (
     <div className="atmosphere relative flex min-h-full flex-1 flex-col">
@@ -99,20 +67,11 @@ export function Album({ initial }: AlbumProps) {
         )}
       </main>
 
-      <GateDialog
-        open={gateOpen}
-        onClose={() => setGateOpen(false)}
-        onSuccess={onGateSuccess}
-      />
       <Composer
         open={composerOpen}
         onClose={() => setComposerOpen(false)}
         onUploaded={refresh}
-        onAuthExpired={() => {
-          setComposerOpen(false);
-          setIsContributor(false);
-          setGateOpen(true);
-        }}
+        onAuthExpired={() => setComposerOpen(false)}
       />
       <MusicToggle />
 
@@ -120,10 +79,7 @@ export function Album({ initial }: AlbumProps) {
         key={selected?.id ?? "none"}
         photo={selected}
         onClose={() => setSelected(null)}
-        onRequireGate={() => {
-          setIsContributor(false);
-          setGateOpen(true);
-        }}
+        onRequireGate={() => {}}
         onChanged={refresh}
       />
     </div>

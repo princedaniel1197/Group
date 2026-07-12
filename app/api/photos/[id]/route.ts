@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { photos } from "@/lib/schema";
-import { isContributor, getClientId } from "@/lib/gate";
+import { ensureClientId } from "@/lib/gate";
 import { deleteObjects } from "@/lib/s3";
-import { ok, fail, unauthorized, forbidden, notFound, errorResponse } from "@/lib/http";
+import { ok, forbidden, notFound, errorResponse } from "@/lib/http";
 
 export const runtime = "nodejs";
 
@@ -17,11 +17,7 @@ type Ctx = { params: Promise<{ id: string }> };
  */
 export async function DELETE(_request: Request, { params }: Ctx) {
   try {
-    if (!(await isContributor())) return unauthorized();
-
-    const clientId = await getClientId();
-    if (!clientId) return fail("Missing client id", 400);
-
+    const clientId = await ensureClientId();
     const { id: photoId } = await params;
 
     const db = await getDb();

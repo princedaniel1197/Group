@@ -92,4 +92,18 @@ export async function getClientId(): Promise<string | null> {
   return store.get(COOKIE_CLIENT_ID)?.value ?? null;
 }
 
+/**
+ * Read the client id, creating + setting the cookie if absent. Used now that
+ * contributing is open (no passphrase) — every browser still gets a stable id
+ * so "one heart per person" and "delete your own" keep working.
+ */
+export async function ensureClientId(): Promise<string> {
+  const store = await cookies();
+  const existing = store.get(COOKIE_CLIENT_ID)?.value;
+  if (existing) return existing;
+  const id = newClientId();
+  store.set(COOKIE_CLIENT_ID, id, clientIdCookieOptions());
+  return id;
+}
+
 export { COOKIE_CONTRIBUTOR, COOKIE_CLIENT_ID };

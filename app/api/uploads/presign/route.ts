@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { isContributor, getClientId } from "@/lib/gate";
+import { ensureClientId } from "@/lib/gate";
 import { presignPut } from "@/lib/s3";
-import { ok, unauthorized, tooMany, errorResponse } from "@/lib/http";
+import { ok, tooMany, errorResponse } from "@/lib/http";
 import { checkRateLimit, ipFrom } from "@/lib/rate-limit";
 import {
   ALLOWED_CONTENT_TYPE,
@@ -28,9 +28,7 @@ const bodySchema = z.object({
  */
 export async function POST(request: Request) {
   try {
-    if (!(await isContributor())) return unauthorized();
-
-    const clientId = await getClientId();
+    const clientId = await ensureClientId();
     const rl = checkRateLimit(
       `presign:${clientId ?? ipFrom(request)}`,
       30,
