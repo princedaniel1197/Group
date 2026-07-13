@@ -21,7 +21,7 @@ export const TTL_ORIGINAL = 15 * 60; // GET original (lightbox)
 export const TTL_AUDIO = 6 * 60 * 60; // GET theme song (long-lived session)
 
 // Bucket key for the album's background theme song.
-export const AUDIO_KEY = "audio/theme.mp3";
+export const AUDIO_KEY = "audio/theme-nights.mp3";
 
 // Field limits.
 export const MAX_CAPTION_LEN = 280;
